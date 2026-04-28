@@ -9,6 +9,7 @@ import nltk
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
 
 import os
 
@@ -28,7 +29,7 @@ def main():
     
     words = nltk.tokenize.word_tokenize(sentence)
     
-    print("   ".join(words))
+    # print("   ".join(words))
     
     docs = [
         "the sky is blue",
@@ -50,11 +51,11 @@ def main():
     
     # loving is not included in the DataFrame becuase I THINK the model has been trained on different data
     
-    print(pd.DataFrame(
-        vect.transform([new_doc]).toarray(),
-        index=[new_doc],
-        columns=vect.get_feature_names_out()
-    ))
+    # print(pd.DataFrame(
+    #     vect.transform([new_doc]).toarray(),
+    #     index=[new_doc],
+    #     columns=vect.get_feature_names_out()
+    # ))
     
     # print(reviews["stars"].value_counts())
     # reviews["stars"].value_counts().plot.pie()
@@ -72,16 +73,16 @@ def main():
     # document-term-matrix
     dtm_train = vect.fit_transform(reviews_train["text"])
     
-    print(dtm_train.astype(bool).sum())
+    # print(dtm_train.astype(bool).sum())
     
-    print(dtm_train.astype(bool).mean())
+    # print(dtm_train.astype(bool).mean())
     
     dtm_val = vect.transform(reviews_val["text"])
     
     lrm = LogisticRegression(solver="saga", C=10)
     lrm.fit(dtm_train, reviews_train["label"])
     
-    print(lrm.score(dtm_val, reviews_val["label"]))
+    # print(lrm.score(dtm_val, reviews_val["label"]))
     
     new_reviews = [
         "What an awesome movie!",
@@ -98,9 +99,33 @@ def main():
     #     columns=vect.get_feature_names_out()
     # ))
     
-    print(lrm.predict(dtm_new))
+    # print(lrm.predict(dtm_new))
     
-    print(lrm.predict_proba(dtm_new))
+    # print(lrm.predict_proba(dtm_new))
+    
+    # Associates to each coeff to the words 
+    coefs = pd.Series(lrm.coef_[0], index=vect.get_feature_names_out())
+    
+    print
+    (   "Most impactful for bad review\n", 
+        coefs.nsmallest(10), 
+        "\n...\nMost impactful for good review\n", 
+        coefs.nlargest(10)
+    )
+    
+    model = Pipeline([
+        ("vect", CountVectorizer()),
+        ("lr", LogisticRegression(solver="saga", C=10)),
+    ])
+    
+    model.fit(reviews_train["text"], reviews_train["label"])
+    
+    print(model.score(reviews_val["text"], reviews_val["label"]))
+    
+    print(pd.Series(
+        model.named_steps["lr"].coef_[0],
+        index=model.named_steps["vect"].get_feature_names_out()
+    ).nlargest(5))
     
     plt.show()
 
