@@ -10,6 +10,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 import os
 
@@ -106,26 +107,38 @@ def main():
     # Associates to each coeff to the words 
     coefs = pd.Series(lrm.coef_[0], index=vect.get_feature_names_out())
     
-    print
-    (   "Most impactful for bad review\n", 
-        coefs.nsmallest(10), 
-        "\n...\nMost impactful for good review\n", 
-        coefs.nlargest(10)
-    )
+    # print
+    # (   "Most impactful for bad review\n", 
+    #     coefs.nsmallest(10), 
+    #     "\n...\nMost impactful for good review\n", 
+    #     coefs.nlargest(10)
+    # )
+    
+    # model = Pipeline([
+    #     ("vect", CountVectorizer()),
+    #     ("lr", LogisticRegression(solver="saga", C=10)),
+    # ])
+    
+    # model.fit(reviews_train["text"], reviews_train["label"])
+    
+    # print(model.score(reviews_val["text"], reviews_val["label"]))
+    
+    # print(pd.Series(
+    #     model.named_steps["lr"].coef_[0],
+    #     index=model.named_steps["vect"].get_feature_names_out()
+    # ).nlargest(5))
+    
+    vect = TfidfVectorizer()
+    dtm = vect.fit_transform(docs)
+    print(pd.DataFrame(dtm.toarray(), index=docs, columns=vect.get_feature_names_out()))
     
     model = Pipeline([
-        ("vect", CountVectorizer()),
+        ("vect", TfidfVectorizer()),
         ("lr", LogisticRegression(solver="saga", C=10)),
     ])
     
     model.fit(reviews_train["text"], reviews_train["label"])
-    
     print(model.score(reviews_val["text"], reviews_val["label"]))
-    
-    print(pd.Series(
-        model.named_steps["lr"].coef_[0],
-        index=model.named_steps["vect"].get_feature_names_out()
-    ).nlargest(5))
     
     plt.show()
 
