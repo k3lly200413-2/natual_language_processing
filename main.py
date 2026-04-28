@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import nltk
 
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
 
 import os
 
@@ -43,8 +45,8 @@ def main():
     vect.transform([new_doc]).toarray()
     
     # print(dtm)
-    print(dtm.toarray())
-    print(vect.get_feature_names_out())
+    # print(dtm.toarray())
+    # print(vect.get_feature_names_out())
     
     # loving is not included in the DataFrame becuase I THINK the model has been trained on different data
     
@@ -60,7 +62,45 @@ def main():
     
     reviews["label"] = np.where(reviews["stars"] >= 4, "pos", "neg")
     
-    print(reviews["label"].value_counts())
+    # print(reviews["label"].value_counts())
+    
+    reviews_train, reviews_val = \
+        train_test_split(reviews, test_size=0.3, random_state=42)
+        
+    vect = CountVectorizer()
+    
+    # document-term-matrix
+    dtm_train = vect.fit_transform(reviews_train["text"])
+    
+    print(dtm_train.astype(bool).sum())
+    
+    print(dtm_train.astype(bool).mean())
+    
+    dtm_val = vect.transform(reviews_val["text"])
+    
+    lrm = LogisticRegression(solver="saga", C=10)
+    lrm.fit(dtm_train, reviews_train["label"])
+    
+    print(lrm.score(dtm_val, reviews_val["label"]))
+    
+    new_reviews = [
+        "What an awesome movie!",
+        "It was really boring"
+    ]
+    
+    dtm_new = vect.transform(new_reviews)
+    
+    # print(dtm_new)
+    
+    # print(pd.DataFrame(
+    #     vect.transform(new_reviews).toarray(),
+    #     index=[new_reviews],
+    #     columns=vect.get_feature_names_out()
+    # ))
+    
+    print(lrm.predict(dtm_new))
+    
+    print(lrm.predict_proba(dtm_new))
     
     plt.show()
 
